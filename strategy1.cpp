@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -16,8 +17,17 @@ struct Entity
 	int state;
 };
 
+struct Pos
+{
+	int x;
+	int y;
+};
+
 void Patrol(int pos, vector <Entity> list, int i);
 void Throw(int pos);
+void Spell(int pos, int mp, vector <Entity> snaffles, Pos des);
+vector <Entity> find_object(vector <Entity> list, int entities, char* obj);
+double Distance(int x1, int y1, int x2, int y2); 
 
 int main()
 {
@@ -41,6 +51,15 @@ int main()
 			>> entity_list[i].x >> entity_list[i].y >> entity_list[i].vx >> entity_list[i].vy 
 			>> entity_list[i].state; cin.ignore();
         }
+		vector <Entity> snaffles(find_object(entity_list, entities, "SNAFFLE"));
+		if (myTeamId == 0) {
+			Pos op_goal = {16000, 3750};
+			Pos my_goal = {0, 3750};
+		}
+		else {
+			Pos op_goal = {0, 3750};
+			Pos my_goal = {16000, 3750};
+		}
         for (int i = 0; i < 2; i++) {
 			//wizard0 command
 			if (entity_list[i].state == 1) {
@@ -52,19 +71,53 @@ int main()
 			}
 			//wizard1 command
 			else if (i == 1) {
+				if (myMagic > 50) {
+					Spell(myTeamId, myMagic, snaffles, op_goal);
+					continue;
+				}
 				if (entity_list[i].state == 1) {
 					Throw(myTeamId);
 					continue;
 				}
 				Patrol(myTeamId, entity_list, i);
 			}
-            // Write an action using cout. DON'T FORGET THE "<< endl"
             // To debug: cerr << "Debug messages..." << endl;
-
-            // Edit this line to indicate the action for each wizard (0 ≤ thrust ≤ 150, 0 ≤ power ≤ 500, 0 ≤ magic ≤ 1500)
-            // i.e.: "MOVE x y thrust" or "THROW x y power" or "WINGARDIUM id x y magic"
         }
     }
+}
+
+double Distance(int x1, int y1, int x2, int y2)
+{
+	return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
+}
+
+vector <Entity> find_object(vector <Entity> list, int entities, char* obj)
+{
+	int cnt = 0;
+	for (int i=0;i<entities;i++) {
+		if (list[i].entityType == obj)
+			cnt++;
+	}
+	vector <Entity> object(cnt);
+	for (int i=0;i<entities;i++) {
+		if (list[i].entityType == obj) {
+			object.push_back(list[i]);
+		}
+	}
+	return object;
+}
+
+void Spell(int pos, int mp, vector <Entity> snaffles, Pos des)
+{
+	int dis = 16000;
+	int nearId;
+	for (int i=0;i<snaffles.size();i++) {
+		if (Distance(snaffles[i].x, snaffles[i].y, des.x, des.y) <= dis) {
+			dis = Distance(snaffles[i].x, snaffles[i].y, des.x, des.y);
+			nearId = snaffles[i].entityId;
+		}
+	}
+	cout << "WINGARDIUM "<<nearId<<" "<<des.x<<" "<<des.y<<" "<<50<< endl;
 }
 
 void Throw(int pos)
@@ -79,42 +132,55 @@ void Patrol(int pos, vector <Entity> list, int i)
 {
 	static int flag = 0;
 	if (pos == 0) {
-		if (list[i].y <= 2750 && flag <= 0) {
-			cout << "MOVE 0 5750 150" <<endl;
-			flag++;
+		if (flag == 0){
+			if (list[i].y <= 2400) {
+				cout << "MOVE 750 5400 150" << endl;
+			}
+			else if (list[i].y > 2400 && list[i].y <= 5100) {
+				cout << "MOVE 750 5400 150" << endl;
+			}
+			else if (list[i].y > 5100) {
+				cout << "MOVE 750 5400 50" << endl;
+				flag = 1;
+			}
 		}
-		else if (list[i].y > 2750 && list[i].y <= 4750) {
-			return ;
+		else {
+			if (list[i].y <= 2400) {
+				cout << "MOVE 750 1400 50" << endl;
+				flag = 0;
+			}
+			else if (list[i].y > 2400 && list[i].y <= 5100) {
+				cout << "MOVE 750 1400 150" << endl;
+			}
+			else if (list[i].y > 5100) {
+				cout << "MOVE 750 1400 150" << endl;
+			}
 		}
-		else if (list[i].y > 4750 && flag >= 4) {
-			cout << "MOVE 0 1750 150" <<endl;
-			flag--;
-		}
-		//if (list[i].y <= 2000) {
-		//	cout << "MOVE 0 4750 150" << endl;
-		//}
-		//else if (list[i].y > 2000 && list[i].y <= 3750) {
-		//	cout << "MOVE 0 5750 150" << endl;
-		//}
-		//else if (list[i].y > 3750 && list[i].y <= 5500) {
-		//	cout << "MOVE 0 1750 150" << endl;
-		//}
-		//else if (list[i].y > 5500) {
-		//	cout << "MOVE 0 2750 150" << endl;
-		//}
 	}
 	else {
-		if (list[i].y <= 2000) {
-			cout << "MOVE 16000 4750 150" << endl;
+		if (flag == 0){
+			if (list[i].y <= 2400) {
+				cout << "MOVE 15250 5400 150" << endl;
+			}
+			else if (list[i].y > 2400 && list[i].y <= 5100) {
+				cout << "MOVE 15250 5400 150" << endl;
+			}
+			else if (list[i].y > 5100) {
+				cout << "MOVE 15250 5400 50" << endl;
+				flag = 1;
+			}
 		}
-		else if (list[i].y > 2000 && list[i].y <= 3750) {
-			cout << "MOVE 16000 5750 150" << endl;
-		}
-		else if (list[i].y > 3750 && list[i].y <= 5500) {
-			cout << "MOVE 16000 1750 150" << endl;
-		}
-		else if (list[i].y > 5500) {
-			cout << "MOVE 16000 2750 150" << endl;
+		else {
+			if (list[i].y <= 2400) {
+				cout << "MOVE 15250 1400 50" << endl;
+				flag = 0;
+			}
+			else if (list[i].y > 2400 && list[i].y <= 5100) {
+				cout << "MOVE 15250 1400 150" << endl;
+			}
+			else if (list[i].y > 5100) {
+				cout << "MOVE 15250 1400 150" << endl;
+			}
 		}
 	}
 }
