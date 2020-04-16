@@ -3,6 +3,8 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 #define PATROL_R 800
 using namespace std;
 
@@ -31,7 +33,6 @@ void Move(int x, int y, int thrust);
 vector <Entity> find_object(vector <Entity> list, int entities, const char* obj);
 double Distance(int x1, int y1, int x2, int y2); 
 Entity near_des(vector <Entity> units, Pos des);
-int far_des(vector <Entity> units, Pos des);
 bool cmp(const Entity& a, const Entity& b);
 int in_bound(Pos obj, vector <Entity> units, int range);
 
@@ -44,8 +45,10 @@ int main()
 	int opponentScore;
     int opponentMagic;
 	int entities;
+	int magic_flag1 = 0;
     // game loop
     while (1) {
+		srand((unsigned int)time(NULL));
         cin >> myScore >> myMagic; cin.ignore();
         cin >> opponentScore >> opponentMagic; cin.ignore();
         // number of entities still in game
@@ -62,27 +65,33 @@ int main()
 		vector <Entity> op_wizards(find_object(entity_list, entities, "OPPONENT_WIZARD"));
 		Pos my_goal, op_goal;
 		if (myTeamId == 0) {
-			op_goal.x = 16000; op_goal.y = 3750;
-			my_goal.x = 0; my_goal.y = 3750;
+			op_goal.x = 16000; op_goal.y = 2100 + rand() % 3300;
+			my_goal.x = 0; my_goal.y = 2100 + rand() % 3300;
 		}
 		else {
-			op_goal.x = 0; op_goal.y = 3750;
-			my_goal.x = 16000; my_goal.y = 3750;
+			op_goal.x = 0; op_goal.y = 2100 + rand() % 3300;
+			my_goal.x = 16000; my_goal.y = 2100 + rand() % 3300;
 		}
 		Pos wizard0_pos = {wizards[0].x, wizards[0].y};
 		Pos wizard1_pos = {wizards[1].x, wizards[1].y};
-		Pos p1 = {8000, 1000}; Pos p2 = {8000, 6500};
-		int r = myTeamId > 0 ? -800 : 800;
-		Pos p3 = {my_goal.x + r, (my_goal.y - 2000)}; Pos p4 = {my_goal.x + r, (my_goal.y + 2000)};
+		Pos op_wizard0_pos = {op_wizards[0].x, op_wizards[0].y};
+		Pos op_wizard1_pos = {op_wizards[1].x, op_wizards[1].y};
+		Pos p1 = {3500, 6500}; Pos p2 = {12500, 1000};
+		Pos p3 = {p1.x, p2.y}; Pos p4 = {p2.x, p1.y};
 		//wizard0 command
 		if (wizards[0].state == 1) {
 			Throw(op_goal, 500);
 		}
-		else if (myMagic > 60) {
+		else if (myMagic > snaffles.size() * 10) {
 			Spell(myMagic / 2, near_des(snaffles, op_goal).entityId, op_goal);
+			magic_flag1 = 1;
 		}
 		else if (in_bound(wizard0_pos, snaffles, 1500)) {
 			Entity unit = near_des(snaffles, wizard0_pos);
+			Move(unit.x, unit.y, 150);
+		}
+		else if (in_bound(op_wizard0_pos, snaffles, 2000)) {
+			Entity unit = near_des(snaffles, op_wizard0_pos);
 			Move(unit.x, unit.y, 150);
 		}
 		else {
@@ -90,13 +99,18 @@ int main()
 		}
 		//wizard1 command
 		if (wizards[1].state == 1) {
-			Throw(p1, 500);
+			Throw(op_goal, 500);
 		}
-		else if (in_bound(wizard1_pos, snaffles, 800) && myMagic > 20) {
-			Spell(myMagic / 2, near_des(snaffles, wizard1_pos).entityId, op_goal);
+		else if (magic_flag1) {
+			Spell(myMagic / 2, near_des(snaffles, my_goal).entityId, op_goal);
+		    magic_flag1 = 0;
 		}
 		else if (in_bound(wizard1_pos, snaffles, 1500)) {
 			Entity unit = near_des(snaffles, wizard1_pos);
+			Move(unit.x, unit.y, 150);
+		}
+		else if (in_bound(op_wizard1_pos, snaffles, 2000)) {
+			Entity unit = near_des(snaffles, op_wizard1_pos);
 			Move(unit.x, unit.y, 150);
 		}
 		else {
@@ -148,19 +162,6 @@ Entity near_des(vector <Entity> units, Pos des)
 		}
 	}
 	return near_unit;
-}
-
-int far_des(vector <Entity> units, Pos des)
-{
-	int dis = 0;
-	int farId;
-	for (int i=0;i<units.size();i++) {
-		if (Distance(units[i].x, units[i].y, des.x, des.y) >= dis) {
-			dis = Distance(units[i].x, units[i].y, des.x, des.y);
-			farId = units[i].entityId;
-		}
-	}
-	return farId;
 }
 
 void Move(int x, int y, int thrust)
