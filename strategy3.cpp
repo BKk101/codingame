@@ -34,6 +34,7 @@ vector <Entity> find_object(vector <Entity> list, int entities, const char* obj)
 vector <Entity> exclude_object(vector <Entity> list, Entity excl);
 double Distance(int x1, int y1, int x2, int y2); 
 Entity near_des(vector <Entity> units, Pos des);
+Entity far_des(vector <Entity> units, Pos des);
 bool cmp(const Entity& a, const Entity& b);
 int in_bound(Pos obj, vector <Entity> units, int range);
 
@@ -81,19 +82,20 @@ int main()
 		Pos p1 = {3500, 6500}; Pos p2 = {12500, 1000};
 		Pos p3 = {p1.x, p2.y}; Pos p4 = {p2.x, p1.y};
 		//wizard0 command
-		vector <Entity> excld(exclude_object(snaffles, near_des(snaffles, wizard1_pos)));
+		vector <Entity> excld1(exclude_object(snaffles, near_des(snaffles, wizard1_pos)));
+		vector <Entity> excld0(exclude_object(snaffles, near_des(snaffles, wizard0_pos)));
 		if (wizards[0].state == 1) {
-			Throw(op_goal, 500);
+			Throw(op_goal, 200);
 		}
-		else if (myMagic > snaffles.size() * 10) {
-			Spell(myMagic / 2, near_des(excld, op_goal).entityId, op_goal);
+		else if (myMagic > snaffles.size() * 10 && myMagic > 20) {
+			Spell(myMagic / 2, near_des(excld1, op_goal).entityId, op_goal);
 		}
-		else if (in_bound(wizard0_pos, excld, 3000)) {
-			Entity unit = near_des(excld, wizard0_pos);
+		else if (in_bound(wizard0_pos, excld1, 6000)) {
+			Entity unit = near_des(excld1, wizard0_pos);
 			Move(unit.x, unit.y, 150);
 		}
-		else if (in_bound(op_wizard0_pos, excld, 2000)) {
-			Entity unit = near_des(excld, op_wizard0_pos);
+		else if (in_bound(op_wizard0_pos, excld1, 4000)) {
+			Entity unit = near_des(excld1, op_wizard0_pos);
 			Move(unit.x, unit.y, 150);
 		}
 		else {
@@ -106,8 +108,12 @@ int main()
 		else if (opponentMagic < magic_flag1) {
 			Spell(myMagic * 0.7, near_des(snaffles, my_goal).entityId, op_goal);
 		}
+		else if (in_bound(wizard1_pos, excld0, 1000)) {
+			Entity unit = near_des(excld0, wizard1_pos);
+			Move(unit.x, unit.y, 150);
+		}
 		else {
-		    Entity unit = near_des(snaffles, wizard1_pos);
+		    Entity unit = far_des(excld0, op_wizard1_pos);
 			Move(unit.x, unit.y, 150);
 		}
 		magic_flag1 = opponentMagic;
@@ -129,6 +135,8 @@ vector <Entity> find_object(vector <Entity> list, int entities, const char* obj)
 {
 	vector <Entity> object;
 	for (int i=0;i<entities;i++) {
+		if (list[i].x > 16001 || list[i].x < 0)
+			continue;
 		if (list[i].entityType == obj) {
 			object.push_back(list[i]);
 		}
@@ -163,6 +171,19 @@ Entity near_des(vector <Entity> units, Pos des)
 	Entity near_unit;
 	for (int i=0;i<units.size();i++) {
 		if (Distance(units[i].x, units[i].y, des.x, des.y) <= dis) {
+			dis = Distance(units[i].x, units[i].y, des.x, des.y);
+			near_unit = units[i];
+		}
+	}
+	return near_unit;
+}
+
+Entity far_des(vector <Entity> units, Pos des)
+{
+	int dis = 0;
+	Entity near_unit;
+	for (int i=0;i<units.size();i++) {
+		if (Distance(units[i].x, units[i].y, des.x, des.y) >= dis) {
 			dis = Distance(units[i].x, units[i].y, des.x, des.y);
 			near_unit = units[i];
 		}
