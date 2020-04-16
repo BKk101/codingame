@@ -30,7 +30,7 @@ void Spell(int mp, int Id, Pos des);
 void Move(int x, int y, int thrust);
 vector <Entity> find_object(vector <Entity> list, int entities, const char* obj);
 double Distance(int x1, int y1, int x2, int y2); 
-int near_des(vector <Entity> units, Pos des);
+Entity near_des(vector <Entity> units, Pos des);
 int far_des(vector <Entity> units, Pos des);
 bool cmp(const Entity& a, const Entity& b);
 int in_bound(Pos obj, vector <Entity> units, int range);
@@ -71,28 +71,37 @@ int main()
 		}
 		Pos wizard0_pos = {wizards[0].x, wizards[0].y};
 		Pos wizard1_pos = {wizards[1].x, wizards[1].y};
+		Pos p1 = {8000, 1000}; Pos p2 = {8000, 6500};
+		int r = myTeamId > 0 ? -800 : 800;
+		Pos p3 = {my_goal.x + r, (my_goal.y - 2000)}; Pos p4 = {my_goal.x + r, (my_goal.y + 2000)};
 		//wizard0 command
-			Pos p1 = {8000, 1000}; Pos p2 = {8000, 6500};
-			Pos p3 = {my_goal.x + 800, (my_goal.y - 2000)}; Pos p4 = {my_goal.x + 800, (my_goal.y + 2000)};
-			if (wizards[0].state == 1) {
-				Throw(op_goal, 500);
-			}
-			else if (myMagic > 30) {
-				Spell(myMagic / 2, near_des(snaffles, op_goal), op_goal);
-			}
-			else {
-			    Patrol0(p1, p2, wizard0_pos, 150);
-			}
-			//wizard1 command
-			if (wizards[1].state == 1) {
-				Throw(p1, 500);
-			}
-			else if (in_bound(wizard1_pos, snaffles, 800) && myMagic >= 20) {
-				Spell(myMagic / 2, near_des(snaffles, wizard1_pos), op_goal);
-			}
-			else {
-			    Patrol1(p3, p4, wizard1_pos, 150);
-			}
+		if (wizards[0].state == 1) {
+			Throw(op_goal, 500);
+		}
+		else if (myMagic > 60) {
+			Spell(myMagic / 2, near_des(snaffles, op_goal).entityId, op_goal);
+		}
+		else if (in_bound(wizard0_pos, snaffles, 1200)) {
+			Entity unit = near_des(snaffles, wizard0_pos);
+			Move(unit.x, unit.y, 150);
+		}
+		else {
+		    Patrol0(p1, p2, wizard0_pos, 150);
+		}
+		//wizard1 command
+		if (wizards[1].state == 1) {
+			Throw(p1, 500);
+		}
+		else if (in_bound(wizard1_pos, snaffles, 800) && myMagic > 20) {
+			Spell(myMagic / 2, near_des(snaffles, wizard1_pos).entityId, op_goal);
+		}
+		else if (in_bound(wizard1_pos, snaffles, 1200)) {
+			Entity unit = near_des(snaffles, wizard1_pos);
+			Move(unit.x, unit.y, 150);
+		}
+		else {
+		    Patrol1(p3, p4, wizard1_pos, 150);
+		}
 		//cerr << "Debug messages..." << endl;
 	}
 }
@@ -128,17 +137,17 @@ int in_bound(Pos obj, vector <Entity> units, int range)
 	return 0;
 }
 
-int near_des(vector <Entity> units, Pos des)
+Entity near_des(vector <Entity> units, Pos des)
 {
 	int dis = 16000;
-	int nearId;
+	Entity near_unit;
 	for (int i=0;i<units.size();i++) {
 		if (Distance(units[i].x, units[i].y, des.x, des.y) <= dis) {
 			dis = Distance(units[i].x, units[i].y, des.x, des.y);
-			nearId = units[i].entityId;
+			near_unit = units[i];
 		}
 	}
-	return nearId;
+	return near_unit;
 }
 
 int far_des(vector <Entity> units, Pos des)
