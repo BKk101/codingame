@@ -3,7 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
-#define POLE_R 600
+#define PATROL_R 800
 using namespace std;
 
 struct Entity
@@ -23,7 +23,8 @@ struct Pos
 	int y;
 };
 
-void Patrol(Pos start, Pos end, Pos wizard, int thrust);
+void Patrol0(Pos start, Pos end, Pos wizard, int thrust);
+void Patrol1(Pos start, Pos end, Pos wizard, int thrust);
 void Throw(Pos des, int power);
 void Spell(int mp, int Id, Pos des);
 void Move(int x, int y, int thrust);
@@ -38,16 +39,16 @@ int main()
 {
     int myTeamId; // if 0 you need to score on the right of the map, if 1 you need to score on the left
     cin >> myTeamId; cin.ignore();
-
+	int myScore;
+    int myMagic;
+	int opponentScore;
+    int opponentMagic;
+	int entities;
     // game loop
     while (1) {
-        int myScore;
-        int myMagic;
         cin >> myScore >> myMagic; cin.ignore();
-        int opponentScore;
-        int opponentMagic;
         cin >> opponentScore >> opponentMagic; cin.ignore();
-        int entities; // number of entities still in game
+        // number of entities still in game
         cin >> entities; cin.ignore();
 
 		vector <Entity> entity_list(entities);
@@ -70,34 +71,30 @@ int main()
 		}
 		Pos wizard0_pos = {wizards[0].x, wizards[0].y};
 		Pos wizard1_pos = {wizards[1].x, wizards[1].y};
-        for (int i = 0; i < 2; i++) {
-			//wizard0 command
-            if (i == 0) {
-				if (wizards[0].state == 1) {
-					Throw(op_goal, 500);
-					continue;
-				}
-				if (myMagic > 30) {
-					Spell(myMagic, near_des(snaffles, op_goal), op_goal);
-					continue;
-				}
-				Pos p1 = {8000, 1000};
-				Pos p2 = {8000, 6500};
-				Patrol(p1, p2, wizard0_pos, 150);
+		//wizard0 command
+			Pos p1 = {8000, 1000}; Pos p2 = {8000, 6500};
+			Pos p3 = {my_goal.x + 800, (my_goal.y - 2000)}; Pos p4 = {my_goal.x + 800, (my_goal.y + 2000)};
+			if (wizards[0].state == 1) {
+				Throw(op_goal, 500);
+			}
+			else if (myMagic > 30) {
+				Spell(myMagic / 2, near_des(snaffles, op_goal), op_goal);
+			}
+			else {
+			    Patrol0(p1, p2, wizard0_pos, 150);
 			}
 			//wizard1 command
-			else if (i == 1) {
-				if (in_bound(wizard1_pos, snaffles, 1000)) {
-					Spell(myMagic, near_des(snaffles, wizard1_pos), op_goal);
-					continue;
-				}
-				Pos p3 = {my_goal.x + 800, (my_goal.y - 2000)};
-				Pos p4 = {my_goal.x + 800, (my_goal.y + 2000)};
-				Patrol(p3, p4, wizard1_pos, 150);
+			if (wizards[1].state == 1) {
+				Throw(p1, 500);
 			}
-            // To debug: cerr << "Debug messages..." << endl;
-        }
-    }
+			else if (in_bound(wizard1_pos, snaffles, 800) && myMagic >= 20) {
+				Spell(myMagic / 2, near_des(snaffles, wizard1_pos), op_goal);
+			}
+			else {
+			    Patrol1(p3, p4, wizard1_pos, 150);
+			}
+		//cerr << "Debug messages..." << endl;
+	}
 }
 
 double Distance(int x1, int y1, int x2, int y2)
@@ -112,12 +109,7 @@ bool cmp(const Entity& a, const Entity& b)
 
 vector <Entity> find_object(vector <Entity> list, int entities, const char* obj)
 {
-	int cnt = 0;
-	for (int i=0;i<entities;i++) {
-		if (list[i].entityType == obj)
-			cnt++;
-	}
-	vector <Entity> object(cnt);
+	vector <Entity> object;
 	for (int i=0;i<entities;i++) {
 		if (list[i].entityType == obj) {
 			object.push_back(list[i]);
@@ -169,7 +161,7 @@ void Move(int x, int y, int thrust)
 
 void Spell(int mp, int Id, Pos des)
 {
-	cout << "WINGARDIUM "<<Id<<" "<<des.x<<" "<<des.y<<" "<<(int)(mp * 1)<< endl;
+	cout << "WINGARDIUM "<<Id<<" "<<des.x<<" "<<des.y<<" "<<mp<< endl;
 }
 
 void Throw(Pos des, int power)
@@ -177,24 +169,47 @@ void Throw(Pos des, int power)
 	cout<<"THROW "<<des.x<<" "<<des.y<<" "<<power<< endl;
 }
 
-void Patrol(Pos start, Pos end, Pos wizard, int thrust)
+void Patrol0(Pos start, Pos end, Pos wizard, int thrust)
 {
 	static int flag = 0;
 	double dis_from_start = Distance(start.x, start.y, wizard.x, wizard.y);
 	double dis_from_end = Distance(end.x, end.y, wizard.x, wizard.y);
 	if (flag == 0) {
-		if (dis_from_end > POLE_R)
+		if (dis_from_end > PATROL_R)
 			Move(end.x, end.y, thrust);
-		else if (dis_from_end <= POLE_R) {
-			Move(start.x, start.y, (int)(thrust * 0.8));
+		else if (dis_from_end <= PATROL_R) {
+			Move(end.x, end.y, (int)(thrust * 0.5));
 			flag = 1;
 		}
 	}
-	if (flag == 1) {
-		if (dis_from_start > POLE_R)
+	else if (flag == 1) {
+		if (dis_from_start > PATROL_R)
 			Move(start.x, start.y, thrust);
-		else if (dis_from_start <= POLE_R) {
-			Move(end.x, end.y, (int)(thrust * 0.8));
+		else if (dis_from_start <= PATROL_R) {
+			Move(start.x, start.y, (int)(thrust * 0.5));
+			flag = 0;
+		}
+	}
+}
+
+void Patrol1(Pos start, Pos end, Pos wizard, int thrust)
+{
+	static int flag = 0;
+	double dis_from_start = Distance(start.x, start.y, wizard.x, wizard.y);
+	double dis_from_end = Distance(end.x, end.y, wizard.x, wizard.y);
+	if (flag == 0) {
+		if (dis_from_end > PATROL_R)
+			Move(end.x, end.y, thrust);
+		else if (dis_from_end <= PATROL_R) {
+			Move(end.x, end.y, (int)(thrust * 0.5));
+			flag = 1;
+		}
+	}
+	else if (flag == 1) {
+		if (dis_from_start > PATROL_R)
+			Move(start.x, start.y, thrust);
+		else if (dis_from_start <= PATROL_R) {
+			Move(start.x, start.y, (int)(thrust * 0.5));
 			flag = 0;
 		}
 	}
